@@ -149,8 +149,11 @@ export const CopilotPane = ({ onInsertCode }) => {
   const [input, setInput] = useState("");
   const [isThinking, setIsThinking] = useState(false);
   const scrollRef = useRef(null);
+
   useEffect(() => {
-    scrollRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (scrollRef.current) {
+      scrollRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
+    }
   }, [messages, isThinking]);
 
   const generateResponse = (prompt) => {
@@ -204,18 +207,27 @@ export const CopilotPane = ({ onInsertCode }) => {
         display: "flex",
         flexDirection: "column",
         height: "100%",
-        background: "var(--bg)",
+        background: "#0a0e1a",
+        position: "relative",
+        overflow: "hidden",
       }}
     >
+      {/* Background texture */}
+      <div className="absolute inset-0 bg-grid-faded opacity-10 pointer-events-none" />
+
+      {/* Chat messages container with proper scroll */}
       <div
-        className="scroll"
+        className="scroll custom-scrollbar"
         style={{
           flex: 1,
           overflowY: "auto",
-          padding: "14px 14px",
+          overflowX: "hidden",
+          padding: "16px",
           display: "flex",
           flexDirection: "column",
-          gap: 12,
+          gap: 14,
+          position: "relative",
+          zIndex: 1,
         }}
       >
         {messages.map((msg, idx) => (
@@ -225,34 +237,48 @@ export const CopilotPane = ({ onInsertCode }) => {
               display: "flex",
               flexDirection: "column",
               alignItems: msg.role === "user" ? "flex-end" : "flex-start",
-              gap: 7,
-              animationDelay: `${idx * 30}ms`,
+              gap: 8,
+              animation: `fadeUp 300ms ease ${idx * 40}ms backwards`,
             }}
           >
             <div
-              className={msg.role === "user" ? "bubble-user" : "bubble-bot"}
+              className={msg.role === "user" ? "bubble-user glass-panel-heavy" : "bubble-bot glass-panel-heavy"}
               style={{
-                maxWidth: "86%",
-                padding: "8px 12px",
+                maxWidth: "88%",
+                padding: "10px 14px",
                 fontSize: 12.5,
-                lineHeight: 1.58,
-                background: msg.role === "user" ? "var(--a)" : "var(--s2)",
-                color: msg.role === "user" ? "#fff" : "var(--t1)",
-                border: msg.role !== "user" ? "1px solid var(--b1)" : "none",
+                lineHeight: 1.6,
+                background: msg.role === "user"
+                  ? "linear-gradient(135deg, rgba(188, 19, 254, 0.15), rgba(188, 19, 254, 0.08))"
+                  : "rgba(21, 27, 46, 0.6)",
+                color: msg.role === "user" ? "#fff" : "rgba(255, 255, 255, 0.9)",
+                border: msg.role === "user"
+                  ? "1px solid rgba(188, 19, 254, 0.3)"
+                  : "1px solid rgba(255, 255, 255, 0.05)",
+                backdropFilter: "blur(20px)",
                 whiteSpace: "pre-wrap",
+                position: "relative",
+                overflow: "hidden",
+                boxShadow: msg.role === "user"
+                  ? "0 8px 32px rgba(188, 19, 254, 0.15)"
+                  : "0 4px 16px rgba(0, 0, 0, 0.3)",
               }}
             >
-              {msg.text}
+              <div className="absolute inset-0 bg-noise opacity-5 pointer-events-none" />
+              <span className="relative z-10">{msg.text}</span>
             </div>
             {msg.code && (
               <div
-                className="code-reveal"
+                className="code-reveal glass-panel-heavy"
                 style={{
                   width: "100%",
-                  background: "var(--s1)",
-                  border: "1px solid var(--b1)",
-                  borderRadius: "var(--r-md)",
+                  maxWidth: "88%",
+                  background: "rgba(10, 14, 26, 0.8)",
+                  border: "1px solid rgba(255, 255, 255, 0.08)",
+                  borderRadius: 16,
                   overflow: "hidden",
+                  backdropFilter: "blur(20px)",
+                  boxShadow: "0 8px 32px rgba(0, 0, 0, 0.4)",
                 }}
               >
                 <div
@@ -260,31 +286,45 @@ export const CopilotPane = ({ onInsertCode }) => {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
-                    padding: "6px 10px",
-                    background: "var(--s2)",
-                    borderBottom: "1px solid var(--b1)",
+                    padding: "8px 12px",
+                    background: "rgba(255, 255, 255, 0.02)",
+                    borderBottom: "1px solid rgba(255, 255, 255, 0.05)",
                   }}
                 >
                   <span
                     style={{
-                      fontSize: 10,
+                      fontSize: 9,
                       fontFamily: "var(--f-mono)",
-                      color: "var(--t3)",
-                      letterSpacing: "0.05em",
+                      color: "rgba(255, 255, 255, 0.4)",
+                      letterSpacing: "0.1em",
+                      fontWeight: 700,
+                      textTransform: "uppercase",
                     }}
                   >
-                    PYTHON
+                    Python
                   </span>
                   <ABtn
                     onClick={() => onInsertCode(msg.code)}
                     style={{
-                      padding: "2px 8px",
+                      padding: "4px 10px",
                       fontSize: 10,
-                      fontWeight: 600,
-                      background: "var(--green-dim)",
-                      color: "var(--green)",
-                      border: "1px solid var(--green-bdr)",
-                      borderRadius: "var(--r-sm)",
+                      fontWeight: 700,
+                      background: "rgba(0, 255, 170, 0.08)",
+                      color: "#00ffaa",
+                      border: "1px solid rgba(0, 255, 170, 0.2)",
+                      borderRadius: 8,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4,
+                      transition: "all 0.2s ease",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = "rgba(0, 255, 170, 0.15)";
+                      e.currentTarget.style.transform = "translateY(-1px)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = "rgba(0, 255, 170, 0.08)";
+                      e.currentTarget.style.transform = "translateY(0)";
                     }}
                   >
                     <ArrowDownToLine size={11} /> Insert
@@ -292,13 +332,15 @@ export const CopilotPane = ({ onInsertCode }) => {
                 </div>
                 <pre
                   style={{
-                    padding: "12px 14px",
+                    padding: "14px 16px",
                     fontSize: 11.5,
                     fontFamily: "var(--f-mono)",
-                    color: "var(--t2)",
-                    lineHeight: 1.65,
+                    color: "rgba(255, 255, 255, 0.85)",
+                    lineHeight: 1.7,
                     overflowX: "auto",
+                    margin: 0,
                   }}
+                  className="custom-scrollbar"
                 >
                   {msg.code}
                 </pre>
@@ -311,32 +353,35 @@ export const CopilotPane = ({ onInsertCode }) => {
             style={{
               display: "flex",
               alignItems: "center",
-              gap: 8,
+              gap: 10,
               animation: "bubbleBot 200ms ease",
             }}
           >
             <div
               style={{
-                width: 20,
-                height: 20,
-                borderRadius: 4,
-                background: "var(--a-dim)",
+                width: 24,
+                height: 24,
+                borderRadius: 8,
+                background: "rgba(188, 19, 254, 0.1)",
+                border: "1px solid rgba(188, 19, 254, 0.2)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 animation: "breathe 1.5s ease-in-out infinite",
               }}
             >
-              <Sparkles size={11} style={{ color: "var(--a)" }} />
+              <Sparkles size={12} style={{ color: "#bc13fe" }} />
             </div>
             <div
+              className="glass-panel-heavy"
               style={{
                 display: "flex",
-                gap: 4,
-                padding: "8px 12px",
-                background: "var(--s2)",
-                border: "1px solid var(--b1)",
-                borderRadius: "2px 8px 8px 8px",
+                gap: 5,
+                padding: "10px 14px",
+                background: "rgba(21, 27, 46, 0.6)",
+                border: "1px solid rgba(255, 255, 255, 0.05)",
+                borderRadius: "2px 12px 12px 12px",
+                backdropFilter: "blur(20px)",
               }}
             >
               {[0, 1, 2].map((i) => (
@@ -347,60 +392,59 @@ export const CopilotPane = ({ onInsertCode }) => {
                     width: 5,
                     height: 5,
                     borderRadius: "50%",
-                    background: "var(--t3)",
+                    background: "rgba(255, 255, 255, 0.3)",
                   }}
                 />
               ))}
             </div>
           </div>
         )}
-        <div ref={scrollRef} />
+        <div ref={scrollRef} style={{ height: 1, flexShrink: 0 }} />
       </div>
+
+      {/* Input area */}
       <div
         style={{
-          padding: "10px 12px",
-          borderTop: "1px solid var(--b1)",
-          background: "var(--s1)",
+          padding: "12px 16px 16px",
+          borderTop: "1px solid rgba(255, 255, 255, 0.05)",
+          background: "rgba(10, 14, 26, 0.8)",
+          backdropFilter: "blur(20px)",
+          position: "relative",
+          zIndex: 2,
+          flexShrink: 0,
         }}
       >
         <div
           style={{
             display: "flex",
-            gap: 8,
+            gap: 10,
             alignItems: "center",
-            padding: "6px 10px 6px 12px",
-            background: "var(--bg)",
-            border: "1px solid var(--b1)",
-            borderRadius: "var(--r-md)",
-            transition: "border-color 120ms, box-shadow 120ms",
+            padding: "8px 12px 8px 14px",
+            background: "rgba(0, 0, 0, 0.4)",
+            border: "1px solid rgba(255, 255, 255, 0.08)",
+            borderRadius: 14,
+            transition: "all 0.2s ease",
+            boxShadow: "inset 0 2px 8px rgba(0, 0, 0, 0.3)",
           }}
           onFocusCapture={(e) => {
-            e.currentTarget.style.borderColor = "var(--a)";
-            e.currentTarget.style.boxShadow = "0 0 0 3px var(--a-dim)";
+            e.currentTarget.style.borderColor = "rgba(188, 19, 254, 0.4)";
+            e.currentTarget.style.boxShadow = "0 0 0 3px rgba(188, 19, 254, 0.08), inset 0 2px 8px rgba(0, 0, 0, 0.3)";
           }}
           onBlurCapture={(e) => {
-            e.currentTarget.style.borderColor = "var(--b1)";
-            e.currentTarget.style.boxShadow = "none";
+            e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.08)";
+            e.currentTarget.style.boxShadow = "inset 0 2px 8px rgba(0, 0, 0, 0.3)";
           }}
         >
-          <Sparkles
-            size={13}
-            style={{
-              color: "var(--a)",
-              flexShrink: 0,
-              animation: "breathe 3s ease-in-out infinite",
-            }}
-          />
           <input
-            className="focusable"
             style={{
               flex: 1,
-              background: "none",
+              background: "transparent",
               border: "none",
               outline: "none",
               fontSize: 12.5,
-              color: "var(--t1)",
+              color: "#fff",
               fontFamily: "var(--f-ui)",
+              fontWeight: 500,
             }}
             placeholder="Ask Copilot to generate a tool…"
             value={input}
@@ -408,12 +452,27 @@ export const CopilotPane = ({ onInsertCode }) => {
             onKeyDown={(e) => e.key === "Enter" && handleSend()}
           />
           <ABtn
-            className="btn-primary"
             onClick={handleSend}
-            disabled={!input.trim() || isThinking}
-            style={{ padding: "4px 8px" }}
+            disabled={!input.trim()}
+            style={{
+              padding: "6px 12px",
+              fontSize: 11,
+              fontWeight: 700,
+              background: input.trim()
+                ? "linear-gradient(135deg, rgba(188, 19, 254, 0.2), rgba(188, 19, 254, 0.1))"
+                : "rgba(255, 255, 255, 0.03)",
+              color: input.trim() ? "#bc13fe" : "rgba(255, 255, 255, 0.2)",
+              border: input.trim()
+                ? "1px solid rgba(188, 19, 254, 0.3)"
+                : "1px solid rgba(255, 255, 255, 0.05)",
+              borderRadius: 8,
+              cursor: input.trim() ? "pointer" : "not-allowed",
+              transition: "all 0.2s ease",
+              textTransform: "uppercase",
+              letterSpacing: "0.05em",
+            }}
           >
-            <Send size={13} />
+            Send
           </ABtn>
         </div>
       </div>

@@ -111,7 +111,8 @@ app.post('/api/orchestra/save', (req, res) => {
         }
 
         const getSafeModName = (node) => {
-            const userLabel = node.data.label || 'node';
+            // Use customName if available, otherwise fall back to label
+            const userLabel = node.data.customName || node.data.label || 'node';
             const slug = userLabel.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '').replace(/_+/g, '_');
 
             // Extract a tiny suffix (2 chars) just to prevent OS-level file conflicts if names are identical
@@ -147,7 +148,7 @@ app.post('/api/orchestra/save', (req, res) => {
                 label: nodes.find(n => n.id === e.source)?.data?.label || 'Unknown Node'
             }));
 
-            let nodeCode = `"""\nArchestra Node: ${node.data.label}\nCategory: ${node.data.category}\nGenerated on: ${manifest.lastUpdated}\n"""\nimport os\nimport sys\n\n# Ensure we can import other nodes in the studio\nsys.path.append(os.path.dirname(__file__))\n\n`;
+            let nodeCode = `"""\nArchestra Node: ${node.data.customName || node.data.label}\nCategory: ${node.data.category}\nGenerated on: ${manifest.lastUpdated}\n"""\nimport os\nimport sys\n\n# Ensure we can import other nodes in the studio\nsys.path.append(os.path.dirname(__file__))\n\n`;
 
             // 1. GENERATE IMPORTS FOR CONNECTED NODES
             if (incoming.length > 0) {
@@ -160,8 +161,11 @@ app.post('/api/orchestra/save', (req, res) => {
                 nodeCode += `\n`;
             }
 
+
             nodeCode += `# --- TOPOLOGY METADATA ---\n`;
+            nodeCode += `# This node receives data from ${incoming.length} upstream node(s)\n`;
             nodeCode += `INCOMING_NODES = ${JSON.stringify(incoming, null, 4)}\n`;
+            nodeCode += `# This node sends data to ${outgoing.length} downstream node(s)\n`;
             nodeCode += `OUTGOING_NODES = ${JSON.stringify(outgoing, null, 4)}\n\n`;
 
             if (node.data.category === 'mcp') {

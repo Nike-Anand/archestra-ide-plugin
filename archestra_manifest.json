@@ -1,230 +1,136 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-02-14T11:32:47.960Z",
+  "lastUpdated": "2026-02-14T14:31:24.527Z",
   "topology": {
     "nodes": [
       {
         "id": "lane-mcp",
         "type": "lane",
         "position": {
-          "x": 87.60563380281695,
-          "y": 39.859154929577414
+          "x": 120,
+          "y": 50
         },
         "style": {
-          "width": 350,
-          "height": 800
+          "width": 420,
+          "height": 900
         },
         "data": {
           "category": "mcp"
         },
         "zIndex": -1,
         "measured": {
-          "width": 350,
-          "height": 800
-        },
-        "selected": false,
-        "dragging": false
+          "width": 420,
+          "height": 900
+        }
       },
       {
         "id": "lane-provider",
         "type": "lane",
         "position": {
-          "x": 538.1690140845071,
-          "y": 45.49295774647888
+          "x": 600,
+          "y": 50
         },
         "style": {
-          "width": 350,
-          "height": 800
+          "width": 420,
+          "height": 900
         },
         "data": {
           "category": "provider"
         },
         "zIndex": -1,
         "measured": {
-          "width": 350,
-          "height": 800
-        },
-        "selected": false,
-        "dragging": false
+          "width": 420,
+          "height": 900
+        }
       },
       {
         "id": "lane-client",
         "type": "lane",
         "position": {
-          "x": 920,
+          "x": 1080,
           "y": 50
         },
         "style": {
-          "width": 350,
-          "height": 800
+          "width": 420,
+          "height": 900
         },
         "data": {
           "category": "client"
         },
         "zIndex": -1,
         "measured": {
-          "width": 350,
-          "height": 800
+          "width": 420,
+          "height": 900
         }
       },
       {
-        "id": "provider-1771064099789",
-        "type": "card",
-        "parentId": "lane-provider",
-        "extent": "parent",
-        "position": {
-          "x": 40,
-          "y": 65.63380281690141
-        },
-        "style": {
-          "width": 310,
-          "height": 64
-        },
-        "data": {
-          "category": "provider",
-          "label": "API Gateway",
-          "sublabel": "Ingress",
-          "icon": "net",
-          "toolId": "t-gateway"
-        },
-        "measured": {
-          "width": 310,
-          "height": 64
-        },
-        "selected": false,
-        "dragging": false
-      },
-      {
-        "id": "client-1771064329926",
+        "id": "client-1771079437924",
         "type": "card",
         "parentId": "lane-client",
         "extent": "parent",
         "position": {
           "x": 20,
-          "y": 60
+          "y": 100
         },
-        "style": {
-          "width": 310,
-          "height": 64
-        },
+        "dragHandle": ".drag-handle",
         "data": {
           "category": "client",
           "label": "CLI Tool",
+          "customName": "CLI Tool",
           "sublabel": "Terminal",
           "icon": "terminal",
           "toolId": "t-cli"
         },
         "measured": {
-          "width": 310,
-          "height": 64
+          "width": 400,
+          "height": 90
         },
-        "selected": false
+        "selected": true
       },
       {
-        "id": "mcp-1771064789515",
-        "type": "card",
-        "parentId": "lane-mcp",
-        "extent": "parent",
-        "position": {
-          "x": 0,
-          "y": 33.75600079349336
-        },
-        "style": {
-          "width": 310,
-          "height": 64
-        },
-        "data": {
-          "category": "mcp",
-          "label": "test",
-          "sublabel": "Channel Ops",
-          "icon": "slack",
-          "toolId": "t-slack"
-        },
-        "measured": {
-          "width": 310,
-          "height": 64
-        },
-        "selected": false,
-        "dragging": false
-      },
-      {
-        "id": "provider-1771064793272",
-        "type": "card",
-        "parentId": "lane-provider",
-        "extent": "parent",
-        "position": {
-          "x": 20,
-          "y": 150
-        },
-        "style": {
-          "width": 310,
-          "height": 64
-        },
-        "data": {
-          "category": "provider",
-          "label": "PII Redaction",
-          "sublabel": "Privacy Filter",
-          "icon": "shield",
-          "toolId": "t-guard"
-        },
-        "measured": {
-          "width": 310,
-          "height": 64
-        },
-        "selected": false
-      },
-      {
-        "id": "client-1771066390573",
-        "type": "card",
+        "id": "add-client",
+        "type": "plus",
         "parentId": "lane-client",
         "extent": "parent",
         "position": {
           "x": 20,
-          "y": 150
+          "y": 200
         },
         "style": {
-          "width": 310,
-          "height": 64
+          "width": 380,
+          "height": 54
         },
         "data": {
-          "category": "client",
-          "label": "Next.js App",
-          "sublabel": "Web Dashboard",
-          "icon": "web",
-          "toolId": "t-next"
+          "category": "client"
         },
         "measured": {
-          "width": 310,
-          "height": 64
+          "width": 380,
+          "height": 54
         },
         "selected": false
       },
       {
-        "id": "mcp-1771067062788",
+        "id": "mcp-1771079450955",
         "type": "card",
         "parentId": "lane-mcp",
         "extent": "parent",
         "position": {
-          "x": 0,
-          "y": 374.78555842094823
+          "x": 20,
+          "y": 100
         },
-        "style": {
-          "width": 310,
-          "height": 64
-        },
+        "dragHandle": ".drag-handle",
         "data": {
           "category": "mcp",
-          "label": "Slack Bot",
-          "sublabel": "Channel Ops",
-          "icon": "slack",
-          "toolId": "t-slack"
+          "label": "Stripe API",
+          "customName": "Stripe API",
+          "sublabel": "Payments",
+          "icon": "stripe",
+          "toolId": "t-stripe"
         },
         "measured": {
-          "width": 310,
-          "height": 64
-        },
-        "selected": true,
-        "dragging": false
+          "width": 400,
+          "height": 90
+        }
       },
       {
         "id": "add-mcp",
@@ -233,44 +139,66 @@
         "extent": "parent",
         "position": {
           "x": 20,
-          "y": 240
+          "y": 200
         },
         "style": {
-          "width": 310,
-          "height": 48
+          "width": 380,
+          "height": 54
         },
         "data": {
           "category": "mcp"
         },
         "measured": {
-          "width": 310,
-          "height": 48
+          "width": 380,
+          "height": 54
         },
         "selected": false
       },
       {
-        "id": "provider-1771067064894",
+        "id": "provider-1771079452537",
         "type": "card",
         "parentId": "lane-provider",
         "extent": "parent",
         "position": {
           "x": 20,
-          "y": 240
+          "y": 100
         },
-        "style": {
-          "width": 310,
-          "height": 64
-        },
+        "dragHandle": ".drag-handle",
         "data": {
           "category": "provider",
-          "label": "Auth Guard",
-          "sublabel": "JWT/OAuth",
-          "icon": "key",
-          "toolId": "t-auth"
+          "label": "API Gateway",
+          "customName": "API Gateway",
+          "sublabel": "Ingress",
+          "icon": "net",
+          "toolId": "t-gateway"
         },
         "measured": {
-          "width": 310,
-          "height": 64
+          "width": 400,
+          "height": 90
+        },
+        "selected": false
+      },
+      {
+        "id": "provider-1771079456548",
+        "type": "card",
+        "parentId": "lane-provider",
+        "extent": "parent",
+        "position": {
+          "x": 20,
+          "y": 200
+        },
+        "dragHandle": ".drag-handle",
+        "data": {
+          "category": "provider",
+          "label": "API Gateway",
+          "customName": "API Gateway 2",
+          "sublabel": "Ingress",
+          "icon": "net",
+          "toolId": "t-gateway"
+        },
+        "measured": {
+          "width": 400,
+          "height": 90
         }
       },
       {
@@ -280,65 +208,18 @@
         "extent": "parent",
         "position": {
           "x": 20,
-          "y": 330
+          "y": 300
         },
         "style": {
-          "width": 310,
-          "height": 48
+          "width": 380,
+          "height": 54
         },
         "data": {
           "category": "provider"
         },
         "measured": {
-          "width": 310,
-          "height": 48
-        },
-        "selected": false
-      },
-      {
-        "id": "client-1771067067901",
-        "type": "card",
-        "parentId": "lane-client",
-        "extent": "parent",
-        "position": {
-          "x": 20,
-          "y": 240
-        },
-        "style": {
-          "width": 310,
-          "height": 64
-        },
-        "data": {
-          "category": "client",
-          "label": "CLI Tool",
-          "sublabel": "Terminal",
-          "icon": "terminal",
-          "toolId": "t-cli"
-        },
-        "measured": {
-          "width": 310,
-          "height": 64
-        }
-      },
-      {
-        "id": "add-client",
-        "type": "plus",
-        "parentId": "lane-client",
-        "extent": "parent",
-        "position": {
-          "x": 20,
-          "y": 330
-        },
-        "style": {
-          "width": 310,
-          "height": 48
-        },
-        "data": {
-          "category": "client"
-        },
-        "measured": {
-          "width": 310,
-          "height": 48
+          "width": 380,
+          "height": 54
         },
         "selected": false
       }
@@ -347,59 +228,32 @@
       {
         "type": "smoothstep",
         "markerEnd": {
-          "type": "arrowclosed"
+          "type": "arrowclosed",
+          "color": "#00f2ff"
         },
-        "source": "provider-1771064099789",
-        "target": "client-1771064329926",
-        "animated": true,
         "style": {
           "stroke": "#fff",
           "strokeWidth": 1.5
         },
-        "id": "xy-edge__provider-1771064099789-client-1771064329926"
+        "source": "mcp-1771079450955",
+        "target": "provider-1771079452537",
+        "animated": true,
+        "id": "xy-edge__mcp-1771079450955-provider-1771079452537"
       },
       {
         "type": "smoothstep",
         "markerEnd": {
-          "type": "arrowclosed"
+          "type": "arrowclosed",
+          "color": "#00f2ff"
         },
-        "source": "mcp-1771064789515",
-        "target": "provider-1771064793272",
-        "animated": true,
         "style": {
           "stroke": "#fff",
           "strokeWidth": 1.5
         },
-        "id": "xy-edge__mcp-1771064789515-provider-1771064793272"
-      },
-      {
-        "type": "smoothstep",
-        "markerEnd": {
-          "type": "arrowclosed"
-        },
-        "source": "provider-1771064793272",
-        "target": "client-1771066390573",
+        "source": "provider-1771079452537",
+        "target": "client-1771079437924",
         "animated": true,
-        "style": {
-          "stroke": "#fff",
-          "strokeWidth": 1.5
-        },
-        "id": "xy-edge__provider-1771064793272-client-1771066390573",
-        "selected": false
-      },
-      {
-        "type": "smoothstep",
-        "markerEnd": {
-          "type": "arrowclosed"
-        },
-        "source": "mcp-1771067062788",
-        "target": "provider-1771067064894",
-        "animated": true,
-        "style": {
-          "stroke": "#fff",
-          "strokeWidth": 1.5
-        },
-        "id": "xy-edge__mcp-1771067062788-provider-1771067064894"
+        "id": "xy-edge__provider-1771079452537-client-1771079437924"
       }
     ]
   }

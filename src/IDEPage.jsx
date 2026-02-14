@@ -68,7 +68,7 @@ export default function IDEPage() {
   const activeFile = openFiles.find((f) => f.path === activeFileId) || null;
 
   // ── Handlers ──────────────────────────────────────────────────────────────
-  // Auto-connect to project if no handle is set
+  // Auto-connect to project and auto-refresh file list
   useEffect(() => {
     const fetchProject = async () => {
       try {
@@ -95,7 +95,14 @@ export default function IDEPage() {
         console.error("Failed to fetch project files:", err);
       }
     };
+
+    // Initial fetch
     fetchProject();
+
+    // Auto-refresh every 3 seconds to detect new nodes
+    const refreshInterval = setInterval(fetchProject, 3000);
+
+    return () => clearInterval(refreshInterval);
   }, [activeFileId]);
 
   const handleMagicAction = async (tool) => {
@@ -702,7 +709,7 @@ export default function IDEPage() {
       {/* ── LEFT SIDEBAR ────────────────────────────────────────────────── */}
       <aside
         style={{
-          width: 248,
+          width: 260,
           background: "var(--s0)",
           borderRight: "1px solid var(--b1)",
           display: "flex",
@@ -710,56 +717,20 @@ export default function IDEPage() {
           flexShrink: 0,
           zIndex: 10,
           animation: "fadeRight 220ms ease",
+          position: "relative",
         }}
       >
-        {/* Logo */}
-        <div
-          style={{
-            height: 46,
-            display: "flex",
-            alignItems: "center",
-            padding: "0 14px",
-            borderBottom: "1px solid var(--b1)",
-            gap: 9,
-          }}
-        >
-          <div
-            className="logo-icon"
-            style={{
-              width: 24,
-              height: 24,
-              borderRadius: 5,
-              background: "var(--a-dim)",
-              border: "1px solid var(--a-bdr)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <Cpu size={13} style={{ color: "var(--a)" }} />
+        {/* Sidebar ambient glow */}
+        <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 120, background: "linear-gradient(180deg, rgba(124,92,252,0.04), transparent)", pointerEvents: "none", zIndex: 0 }} />
+
+        {/* Logo Header */}
+        <div className="ide-sidebar-header" style={{ position: "relative", zIndex: 1 }}>
+          <div className="ide-logo-icon">
+            <Cpu size={14} style={{ color: "var(--a)" }} />
           </div>
-          <span
-            style={{
-              fontSize: 13,
-              fontWeight: 600,
-              color: "var(--t1)",
-              letterSpacing: "-0.01em",
-            }}
-          >
-            MCP Studio
-          </span>
+          <span className="ide-logo-text">MCP Studio</span>
           {projectHandle && (
-            <span
-              style={{
-                marginLeft: "auto",
-                fontSize: 10.5,
-                color: "var(--t3)",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-                maxWidth: 80,
-              }}
-            >
+            <span style={{ marginLeft: "auto", fontSize: 10, color: "var(--t3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 80, fontFamily: "var(--f-mono)" }}>
               {projectHandle.name}
             </span>
           )}
@@ -781,72 +752,47 @@ export default function IDEPage() {
               />
             </div>
             {sections.quick && (
-              <div
-                style={{
-                  padding: 8,
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: 5,
-                }}
-              >
+              <div className="p-4 grid grid-cols-2 gap-3">
                 {[
                   {
-                    icon: (
-                      <FilePlus size={14} style={{ color: "var(--green)" }} />
-                    ),
-                    label: "New Server",
-                    action: handleNewServerButton,
+                    icon: <Database size={18} className="text-cyan-400" />,
+                    label: "Nodes",
+                    color: "rgba(0,242,255,0.08)",
+                    borderColor: "rgba(0,242,255,0.15)",
+                    action: () => setSections((p) => ({ ...p, explorer: !p.explorer })),
                   },
                   {
-                    icon: <Key size={14} style={{ color: "var(--amber)" }} />,
+                    icon: <Key size={18} className="text-amber-400" />,
                     label: "Secrets",
+                    color: "rgba(255,170,0,0.08)",
+                    borderColor: "rgba(255,170,0,0.15)",
                     action: handleManageSecrets,
                   },
                   {
-                    icon: <Command size={14} style={{ color: "var(--red)" }} />,
-                    label: "Commands",
-                    action: () => setCmdPaletteOpen(true),
+                    icon: <Command size={18} className="text-rose-400" />,
+                    label: "Terminal",
+                    color: "rgba(255,51,102,0.08)",
+                    borderColor: "rgba(255,51,102,0.15)",
+                    action: () => setBottomPanelOpen(true),
                   },
                   {
-                    icon: <Wand2 size={14} style={{ color: "var(--a)" }} />,
-                    label: "Templates",
+                    icon: <Wand2 size={18} className="text-violet-400" />,
+                    label: "Magic",
+                    color: "rgba(124,92,252,0.08)",
+                    borderColor: "rgba(124,92,252,0.15)",
                     action: () => setRightPanelOpen((p) => !p),
                   },
-                ].map(({ icon, label, action }, i) => (
+                ].map(({ icon, label, color, borderColor, action }, i) => (
                   <button
                     key={label}
-                    className="qa-card focusable"
+                    className="qa-card group relative flex flex-col items-center gap-2.5 p-4 rounded-xl border transition-all duration-300 cursor-pointer"
+                    style={{ background: color, borderColor, animationDelay: `${i * 80}ms` }}
                     onClick={action}
-                    style={{
-                      padding: "8px 9px",
-                      borderRadius: "var(--r-sm)",
-                      cursor: "pointer",
-                      background: "var(--s1)",
-                      border: "1px solid var(--b1)",
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "flex-start",
-                      gap: 5,
-                      textAlign: "left",
-                      animation: `fadeUp 200ms ease ${i * 60}ms both`,
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = "var(--s2)";
-                      e.currentTarget.style.borderColor = "var(--b2)";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = "var(--s1)";
-                      e.currentTarget.style.borderColor = "var(--b1)";
-                    }}
                   >
-                    {icon}
-                    <span
-                      style={{
-                        fontSize: 11,
-                        color: "var(--t2)",
-                        fontWeight: 500,
-                      }}
-                    >
+                    <div className="p-2 rounded-lg bg-black/20 border border-white/5 group-hover:scale-110 transition-all duration-400">
+                      {icon}
+                    </div>
+                    <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400 group-hover:text-slate-200 transition-colors">
                       {label}
                     </span>
                   </button>
@@ -1039,186 +985,67 @@ export default function IDEPage() {
         }}
       >
         {/* Tab bar */}
-        <div
-          style={{
-            height: 36,
-            background: "var(--s0)",
-            borderBottom: "1px solid var(--b1)",
-            display: "flex",
-            alignItems: "stretch",
-            overflowX: "auto",
-            flexShrink: 0,
-            position: "relative",
-            paddingRight: 44,
-            animation: "fadeDown 180ms ease",
-          }}
-        >
+        <div className="ide-tabbar" style={{ paddingRight: 48 }}>
           {openFiles.length === 0 && (
-            <span
-              style={{
-                padding: "0 14px",
-                display: "flex",
-                alignItems: "center",
-                fontSize: 12,
-                color: "var(--t4)",
-              }}
-            >
-              No file open
-            </span>
+            <div className="flex items-center px-5 text-[11px] font-medium tracking-wide text-slate-600 uppercase">
+              No files open
+            </div>
           )}
-          {openFiles.map((f, i) => (
+          {openFiles.map((f) => (
             <div
               key={f.path}
               onClick={() => setActiveFileId(f.path)}
-              className={`tab ${activeFileId === f.path ? "active" : ""}`}
-              style={{ animationDelay: `${i * 40}ms` }}
+              className={`ide-tab group ${activeFileId === f.path ? "active" : ""}`}
             >
               <FileCode
-                size={11}
-                style={{
-                  color: f.name.endsWith(".py") ? "#4D8FCC" : "var(--t3)",
-                  flexShrink: 0,
-                }}
+                size={13}
+                className={f.name.endsWith(".py") ? "text-violet-400" : "text-slate-500"}
               />
-              <span
-                style={{
-                  maxWidth: 110,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                }}
-              >
+              <span className="text-[12px] font-medium tracking-tight">
                 {f.name}
               </span>
+
               {f.isUnsaved && (
-                <Circle
-                  size={5}
-                  style={{
-                    color: "var(--t2)",
-                    fill: "var(--t2)",
-                    flexShrink: 0,
-                    animation: "pulse 2s ease infinite",
-                  }}
-                />
+                <div className="w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_6px_rgba(245,158,11,0.6)] animate-pulse" />
               )}
+
               <button
                 onClick={(e) => closeFile(e, f.path)}
-                style={{
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  color: "var(--t3)",
-                  display: "flex",
-                  padding: 2,
-                  borderRadius: 3,
-                  opacity: 0,
-                  marginLeft: 1,
-                  transition:
-                    "opacity 100ms, background 80ms, color 80ms, transform 80ms",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.opacity = "1";
-                  e.currentTarget.style.background = "var(--s4)";
-                  e.currentTarget.style.color = "var(--t1)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.opacity = "0";
-                  e.currentTarget.style.background = "";
-                  e.currentTarget.style.transform = "";
-                }}
+                className="ide-tab-close ml-1"
               >
-                <X size={10} />
+                <X size={12} />
               </button>
             </div>
           ))}
-          <div
-            style={{
-              position: "absolute",
-              right: 0,
-              top: 0,
-              height: "100%",
-              display: "flex",
-              alignItems: "center",
-              padding: "0 9px",
-              background: "var(--s0)",
-              borderLeft: "1px solid var(--b1)",
-              gap: 2,
-            }}
-          >
+          <div className="absolute right-0 top-0 bottom-0 flex items-center px-3 bg-[var(--s1)] border-l border-[var(--b1)] gap-1">
             <button
-              className={`ibtn focusable ${rightPanelOpen ? "on" : ""}`}
+              className={`p-1.5 rounded-lg transition-all ${rightPanelOpen ? "bg-violet-500/10 text-violet-400 shadow-[0_0_12px_rgba(124,92,252,0.15)]" : "text-slate-500 hover:text-slate-300 hover:bg-white/5"}`}
               onClick={() => setRightPanelOpen((p) => !p)}
               title="Magic Tools"
             >
-              <Wand2 size={14} />
+              <Wand2 size={15} />
             </button>
           </div>
         </div>
 
-        {/* Toolbar — slides down when file opens */}
+        {/* Toolbar */}
         {activeFile && (
-          <div
-            className="toolbar-in"
-            style={{
-              height: 38,
-              background: "var(--s1)",
-              borderBottom: "1px solid var(--b1)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              padding: "0 13px",
-              flexShrink: 0,
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                minWidth: 0,
-              }}
-            >
-              <span
-                style={{
-                  fontSize: 11.5,
-                  color: "var(--t3)",
-                  fontFamily: "var(--f-mono)",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                }}
-              >
+          <div className="ide-toolbar">
+            <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+              <span style={{ fontSize: 11, color: "var(--t3)", fontFamily: "var(--f-mono)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {activeFile.path}
               </span>
               {activeFile.isUnsaved && (
-                <span
-                  style={{
-                    fontSize: 10,
-                    fontWeight: 600,
-                    color: "var(--amber)",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.06em",
-                    flexShrink: 0,
-                    animation: "pulse 2.5s ease infinite",
-                  }}
-                >
+                <span className="text-[9px] font-semibold text-amber-400 uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-400/10 border border-amber-400/20" style={{ animation: "pulse 2.5s ease infinite" }}>
                   Modified
                 </span>
               )}
             </div>
             <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-              <ABtn
-                className="btn-secondary"
-                onClick={handleSave}
-                style={{ fontSize: 11.5, padding: "5px 10px" }}
-              >
+              <ABtn className="btn-secondary" onClick={handleSave} style={{ fontSize: 11, padding: "5px 10px" }}>
                 <Save size={12} /> Save
               </ABtn>
-              <ABtn
-                className="btn-primary"
-                onClick={handleTestMCP}
-                style={{ fontSize: 11.5, padding: "5px 12px" }}
-              >
+              <ABtn className="btn-primary" onClick={handleTestMCP} style={{ fontSize: 11, padding: "5px 12px" }}>
                 <Bot size={12} /> Test MCP
               </ABtn>
             </div>
@@ -1262,132 +1089,32 @@ export default function IDEPage() {
             </div>
           ) : (
             /* ── Animated empty state ── */
-            <div
-              style={{
-                flex: 1,
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 16,
-                position: "relative",
-                overflow: "hidden",
-              }}
-            >
+            <div className="ide-empty-state">
               {/* Ambient scan line */}
               <div className="scan-line" />
               {/* Background grid */}
-              <div
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  backgroundImage:
-                    "linear-gradient(var(--b0) 1px, transparent 1px), linear-gradient(90deg, var(--b0) 1px, transparent 1px)",
-                  backgroundSize: "40px 40px",
-                  animation: "gridFade 5s ease-in-out infinite",
-                  pointerEvents: "none",
-                }}
-              />
+              <div className="bg-grid-faded" style={{ position: "absolute", inset: 0, animation: "gridFade 5s ease-in-out infinite" }} />
 
-              {/* Orbital rings */}
-              <div
-                style={{
-                  position: "relative",
-                  width: 80,
-                  height: 80,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <div
-                  className="empty-ring"
-                  style={{
-                    position: "absolute",
-                    inset: -14,
-                    borderRadius: "50%",
-                    border: "1px solid var(--b1)",
-                  }}
-                />
-                <div
-                  style={{
-                    position: "absolute",
-                    inset: -8,
-                    borderRadius: "50%",
-                    border: "1px dashed var(--a-bdr)",
-                    animation: "orbitSlow 12s linear infinite",
-                  }}
-                />
-                <div
-                  className="empty-float"
-                  style={{
-                    width: 52,
-                    height: 52,
-                    borderRadius: 12,
-                    background: "var(--s1)",
-                    border: "1px solid var(--b1)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
-                  }}
-                >
-                  <Cpu
-                    size={24}
-                    strokeWidth={1.25}
-                    style={{
-                      color: "var(--t3)",
-                      animation: "breathe 3s ease-in-out infinite",
-                    }}
-                  />
-                </div>
+              {/* Orbital icon */}
+              <div className="ide-empty-icon">
+                <Cpu size={28} strokeWidth={1.25} style={{ color: "var(--a)", animation: "breathe 3s ease-in-out infinite" }} />
               </div>
 
-              <div
-                style={{
-                  textAlign: "center",
-                  animation: "fadeUp 300ms 100ms ease both",
-                }}
-              >
-                <p
-                  style={{
-                    fontSize: 13.5,
-                    fontWeight: 500,
-                    color: "var(--t2)",
-                    margin: "0 0 5px",
-                  }}
-                >
+              <div style={{ textAlign: "center", animation: "fadeUp 300ms 100ms ease both" }}>
+                <p className="gradient-text-static" style={{ fontSize: 16, fontWeight: 600, margin: "0 0 6px", fontFamily: "var(--f-main)" }}>
                   No file selected
                 </p>
                 <p style={{ fontSize: 12, color: "var(--t3)", margin: 0 }}>
-                  Open a folder or press{" "}
-                  <kbd
-                    style={{
-                      fontSize: 10.5,
-                      padding: "1px 5px",
-                      background: "var(--s2)",
-                      border: "1px solid var(--b1)",
-                      borderRadius: "var(--r-sm)",
-                      fontFamily: "var(--f-mono)",
-                    }}
-                  >
+                  Open a file from the explorer or press{" "}
+                  <kbd style={{ fontSize: 10, padding: "2px 6px", background: "var(--s3)", border: "1px solid var(--b2)", borderRadius: 4, fontFamily: "var(--f-mono)", color: "var(--t2)" }}>
                     ⌘K
                   </kbd>{" "}
                   to get started
                 </p>
               </div>
 
-              {/* Animated feature chips */}
-              <div
-                style={{
-                  display: "flex",
-                  gap: 8,
-                  flexWrap: "wrap",
-                  justifyContent: "center",
-                  maxWidth: 320,
-                  animation: "fadeUp 300ms 200ms ease both",
-                }}
-              >
+              {/* Shortcut chips */}
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center", maxWidth: 320, animation: "fadeUp 300ms 200ms ease both" }}>
                 {[
                   ["⌘K", "Commands"],
                   ["⌘↵", "Test LLM"],
@@ -1397,27 +1124,12 @@ export default function IDEPage() {
                   <div
                     key={k}
                     style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 5,
-                      padding: "3px 8px",
-                      background: "var(--s1)",
-                      border: "1px solid var(--b1)",
-                      borderRadius: "var(--r-md)",
-                      fontSize: 11,
-                      color: "var(--t3)",
-                      animation: `fadeUp 250ms ${300 + i * 60}ms ease both`,
+                      display: "flex", alignItems: "center", gap: 5, padding: "4px 10px",
+                      background: "rgba(124,92,252,0.04)", border: "1px solid var(--b1)", borderRadius: 6,
+                      fontSize: 11, color: "var(--t3)", animation: `fadeUp 250ms ${300 + i * 60}ms ease both`,
                     }}
                   >
-                    <kbd
-                      style={{
-                        fontFamily: "var(--f-mono)",
-                        fontSize: 10,
-                        background: "var(--s3)",
-                        padding: "0 3px",
-                        borderRadius: 2,
-                      }}
-                    >
+                    <kbd style={{ fontFamily: "var(--f-mono)", fontSize: 10, background: "var(--s3)", padding: "0 4px", borderRadius: 3, color: "var(--t2)" }}>
                       {k}
                     </kbd>
                     {l}
@@ -1429,33 +1141,8 @@ export default function IDEPage() {
 
           {/* Bottom panel */}
           {bottomPanelOpen && (
-            <div
-              className="panel-in"
-              style={{
-                position: "absolute",
-                bottom: 0,
-                left: 0,
-                right: 0,
-                zIndex: 50,
-                height: 300,
-                background: "var(--s0)",
-                borderTop: "1px solid var(--b1)",
-                display: "flex",
-                flexDirection: "column",
-                boxShadow: "0 -12px 40px rgba(0,0,0,0.4)",
-              }}
-            >
-              <div
-                style={{
-                  height: 34,
-                  background: "var(--s1)",
-                  borderBottom: "1px solid var(--b1)",
-                  display: "flex",
-                  alignItems: "stretch",
-                  justifyContent: "space-between",
-                  flexShrink: 0,
-                }}
-              >
+            <div className="ide-bottom-panel">
+              <div className="ide-bottom-panel-header">
                 <div style={{ display: "flex", alignItems: "stretch" }}>
                   {[
                     ["console", "Terminal"],
@@ -1526,18 +1213,7 @@ export default function IDEPage() {
 
               {/* Terminal */}
               {bottomPanelTab === "console" && (
-                <div
-                  className="scroll"
-                  style={{
-                    flex: 1,
-                    overflowY: "auto",
-                    padding: "11px 14px",
-                    background: "#050507",
-                    fontFamily: "var(--f-mono)",
-                    fontSize: 12,
-                    lineHeight: 1.62,
-                  }}
-                >
+                <div className="ide-terminal scroll">
                   {logs.map((l, i) => (
                     <div
                       key={i}
@@ -1769,68 +1445,24 @@ export default function IDEPage() {
           )}
         </div>
 
-        {/* Status bar */}
-        <footer
-          style={{
-            height: 23,
-            background: "var(--s1)",
-            borderTop: "1px solid var(--b1)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "0 13px",
-            flexShrink: 0,
-          }}
-        >
+        <footer className="ide-statusbar">
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
             <button
               className="focusable"
               onClick={handleOpenTerminal}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 5,
-                fontSize: 10.5,
-                color: "var(--t3)",
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                padding: 0,
-                transition: "color 100ms",
-              }}
+              style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10.5, color: "var(--t3)", background: "none", border: "none", cursor: "pointer", padding: 0, transition: "color 100ms" }}
               onMouseEnter={(e) => (e.currentTarget.style.color = "var(--t1)")}
               onMouseLeave={(e) => (e.currentTarget.style.color = "var(--t3)")}
             >
               <Terminal size={10} /> Terminal
             </button>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 5,
-                fontSize: 10.5,
-                color: mcpStatus === "Running" ? "var(--green)" : "var(--t3)",
-                transition: "color 300ms",
-              }}
-            >
-              <span
-                className={`dot ${mcpStatus === "Running" ? "dot-running" : "dot-idle"}`}
-              />
+            <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10.5, color: mcpStatus === "Running" ? "var(--green)" : "var(--t3)", transition: "color 300ms" }}>
+              <span className={`dot ${mcpStatus === "Running" ? "dot-running" : "dot-idle"}`} />
               MCP {mcpStatus}
             </div>
           </div>
-          <span
-            style={{
-              fontSize: 10.5,
-              color: "var(--t3)",
-              fontFamily: "var(--f-mono)",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-              maxWidth: 320,
-            }}
-          >
-            {activeFile ? activeFile.path : "—"}
+          <span style={{ fontSize: 10, color: "var(--t4)", fontFamily: "var(--f-mono)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 320 }}>
+            {activeFile ? activeFile.path : "Archestra Studio"}
           </span>
         </footer>
       </main>
