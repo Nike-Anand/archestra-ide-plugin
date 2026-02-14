@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback, useState } from "react";
+import React, { useMemo, useCallback, useState, useEffect } from "react";
 import {
   ReactFlow,
   MiniMap,
@@ -362,7 +362,7 @@ const PlusNode = ({ data }) => {
 };
 
 // --- 4. CONFIGURATION SIDEBAR COMPONENT ---
-const ConfigSidebar = ({ selectedNode, updateNodeData }) => {
+const ConfigSidebar = ({ selectedNode, updateNodeData, onDeleteNode }) => {
   if (!selectedNode) {
     return (
       <div className="h-full flex flex-col items-center justify-center p-8 text-center text-gray-600">
@@ -401,12 +401,18 @@ const ConfigSidebar = ({ selectedNode, updateNodeData }) => {
             CONFIGURATION
           </span>
         </div>
-        <h2 className="text-xl font-bold text-white mb-1">
-          {selectedNode.data.label}
-        </h2>
-        <span className="text-[10px] text-gray-500 font-mono">
-          {selectedNode.id}
-        </span>
+        <div className="space-y-2 mt-4">
+          <label className="text-[10px] font-bold text-violet-400 uppercase tracking-widest">
+            NODE IDENTITY
+          </label>
+          <input
+            type="text"
+            className="w-full bg-[#0E1117] border border-[#2A3241] rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500 transition-colors"
+            value={selectedNode.data.label || ""}
+            onChange={(e) => updateNodeData(selectedNode.id, { ...selectedNode.data, label: e.target.value })}
+            placeholder="E.g. Auth Gateway"
+          />
+        </div>
       </div>
       <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
         {config.fields.map((field) => (
@@ -460,10 +466,16 @@ const ConfigSidebar = ({ selectedNode, updateNodeData }) => {
         </div>
       </div>
       <div className="p-6 border-t border-[#2A3241] flex gap-3">
-        <button className="flex-1 flex items-center justify-center gap-2 py-2 rounded-md bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold transition-colors">
+        <button
+          className="flex-1 flex items-center justify-center gap-2 py-2 rounded-md bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold transition-colors"
+          onClick={() => updateNodeData(selectedNode.id, selectedNode.data)}
+        >
           <Save size={14} /> SAVE
         </button>
-        <button className="flex items-center justify-center p-2 rounded-md bg-[#2A3241] hover:bg-red-900/20 hover:text-red-400 text-gray-400 transition-colors">
+        <button
+          className="flex items-center justify-center p-2 rounded-md bg-[#2A3241] hover:bg-red-900/20 hover:text-red-400 text-gray-400 transition-colors"
+          onClick={() => onDeleteNode(selectedNode.id)}
+        >
           <Trash2 size={14} />
         </button>
       </div>
@@ -507,95 +519,35 @@ const initialNodes = [
     zIndex: -1,
   },
   {
-    id: "mcp-1",
-    type: "card",
-    parentId: "lane-mcp",
-    extent: "parent",
-    position: { x: 20, y: START_Y },
-    style: { width: CARD_WIDTH, height: CARD_HEIGHT },
-    data: {
-      category: "mcp",
-      label: "Postgres DB",
-      sublabel: "Customer Data",
-      icon: "db",
-      toolId: "t-pg",
-    },
-  },
-  {
     id: "add-mcp",
     type: "plus",
     parentId: "lane-mcp",
     extent: "parent",
-    position: { x: 20, y: START_Y + CARD_GAP_Y },
+    position: { x: 20, y: START_Y },
     style: { width: CARD_WIDTH, height: 48 },
     data: { category: "mcp" },
-  },
-  {
-    id: "prov-1",
-    type: "card",
-    parentId: "lane-provider",
-    extent: "parent",
-    position: { x: 20, y: START_Y },
-    style: { width: CARD_WIDTH, height: CARD_HEIGHT },
-    data: {
-      category: "provider",
-      label: "API Gateway",
-      sublabel: "Ingress",
-      icon: "net",
-      toolId: "t-gateway",
-    },
   },
   {
     id: "add-provider",
     type: "plus",
     parentId: "lane-provider",
     extent: "parent",
-    position: { x: 20, y: START_Y + CARD_GAP_Y },
+    position: { x: 20, y: START_Y },
     style: { width: CARD_WIDTH, height: 48 },
     data: { category: "provider" },
-  },
-  {
-    id: "cli-1",
-    type: "card",
-    parentId: "lane-client",
-    extent: "parent",
-    position: { x: 20, y: START_Y },
-    style: { width: CARD_WIDTH, height: CARD_HEIGHT },
-    data: {
-      category: "client",
-      label: "Next.js App",
-      sublabel: "Web Dashboard",
-      icon: "web",
-      toolId: "t-next",
-    },
   },
   {
     id: "add-client",
     type: "plus",
     parentId: "lane-client",
     extent: "parent",
-    position: { x: 20, y: START_Y + CARD_GAP_Y },
+    position: { x: 20, y: START_Y },
     style: { width: CARD_WIDTH, height: 48 },
     data: { category: "client" },
   },
 ];
 
-const initialEdges = [
-  {
-    id: "e1",
-    source: "mcp-1",
-    target: "prov-1",
-    animated: true,
-    style: { stroke: "#06b6d4" },
-  },
-  {
-    id: "e3",
-    source: "prov-1",
-    target: "cli-1",
-    animated: true,
-    style: { stroke: "#eab308" },
-  },
-];
+const initialEdges = [];
 
 export default function ArchestraStudio() {
   const [activeScreen, setActiveScreen] = useState("orchestra"); // 'orchestra' | 'ide'
@@ -606,6 +558,112 @@ export default function ArchestraStudio() {
     isOpen: false,
     category: null,
   });
+
+  // Fetch actual nodes and discovered servers from backend
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // 1. Try to load existing manifest first
+        const loadRes = await fetch('http://localhost:3001/api/orchestra/load');
+        const loadData = await loadRes.json();
+
+        if (loadData.success && loadData.nodes) {
+          setNodes(loadData.nodes);
+          setEdges(loadData.edges || []);
+          console.log("Loaded architecture from manifest.");
+          return;
+        }
+
+        // 2. If no manifest, perform discovery logic
+        const [nodesRes, mcpRes] = await Promise.all([
+          fetch('http://localhost:3001/api/orchestra/nodes'),
+          fetch('http://localhost:3001/api/mcp/discover')
+        ]);
+
+        const nodesData = await nodesRes.json();
+        const mcpData = await mcpRes.json();
+
+        if (nodesData.success) {
+          // Keep only lanes and add buttons from initial state
+          const updatedNodes = [...initialNodes.filter(n => n.type === 'lane' || n.type === 'plus')];
+
+          // Count items per category to stack them correctly
+          const counts = { mcp: 0, provider: 0, client: 0 };
+
+          nodesData.standardNodes.forEach((node) => {
+            const cat = node.category;
+            updatedNodes.push({
+              id: node.id,
+              type: 'card',
+              parentId: `lane-${cat}`,
+              extent: 'parent',
+              position: { x: 20, y: START_Y + (counts[cat] * CARD_GAP_Y) },
+              style: { width: CARD_WIDTH, height: CARD_HEIGHT },
+              data: { ...node }
+            });
+            counts[cat]++;
+          });
+
+          // Also inject discovered MCP servers as nodes in the MCP lane
+          if (mcpData.success) {
+            mcpData.servers.forEach((server) => {
+              updatedNodes.push({
+                id: `mcp-auto-${server.id}`,
+                type: 'card',
+                parentId: 'lane-mcp',
+                extent: 'parent',
+                position: { x: 20, y: START_Y + (counts.mcp * CARD_GAP_Y) },
+                style: { width: CARD_WIDTH, height: CARD_HEIGHT },
+                data: {
+                  category: 'mcp',
+                  label: server.name.replace('.py', '').replace('mcp_', '').toUpperCase(),
+                  sublabel: 'Auto-discovered Server',
+                  icon: 'code',
+                  toolId: server.id
+                }
+              });
+              counts.mcp++;
+            });
+          }
+
+          // Reposition "Add" buttons to be at the bottom of each list
+          updatedNodes.forEach(node => {
+            if (node.type === 'plus') {
+              const cat = node.data.category;
+              node.position.y = START_Y + (counts[cat] * CARD_GAP_Y);
+            }
+          });
+
+          setNodes(updatedNodes);
+        }
+      } catch (err) {
+        console.error("Failed to fetch backend data:", err);
+      }
+    };
+
+    fetchData();
+  }, []); // Only on mount
+
+  // 3. Auto-save architecture to backend (Architecture as Code)
+  useEffect(() => {
+    // Skip saving if nodes are just the default lanes (empty)
+    if (nodes.length <= 3) return;
+
+    const timer = setTimeout(async () => {
+      try {
+        await fetch('http://localhost:3001/api/orchestra/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nodes, edges })
+        });
+        console.log("Auto-saved Archestra topology.");
+      } catch (err) {
+        console.error("Failed to auto-save Archestra topology:", err);
+      }
+    }, 2000); // 2 second debounce
+
+    return () => clearTimeout(timer);
+  }, [nodes, edges]);
 
   const nodeTypes = useMemo(
     () => ({ lane: LaneNode, card: CardNode, plus: PlusNode }),
@@ -641,6 +699,37 @@ export default function ArchestraStudio() {
       );
     },
     [setNodes],
+  );
+
+  const handleDeleteNode = useCallback(
+    (nodeId) => {
+      const nodeToDelete = nodes.find((n) => n.id === nodeId);
+      if (!nodeToDelete) return;
+
+      const category = nodeToDelete.data.category;
+      const deleteY = nodeToDelete.position.y;
+
+      setNodes((nds) => {
+        // 1. Remove the node
+        let updatedNodes = nds.filter((n) => n.id !== nodeId);
+
+        // 2. Shift all nodes below it in the same lane up
+        updatedNodes = updatedNodes.map((n) => {
+          if (n.parentId === `lane-${category}` && n.position.y > deleteY) {
+            return { ...n, position: { ...n.position, y: n.position.y - CARD_GAP_Y } };
+          }
+          return n;
+        });
+
+        return updatedNodes;
+      });
+
+      // 3. Remove any connected edges
+      setEdges((eds) => eds.filter((e) => e.source !== nodeId && e.target !== nodeId));
+
+      setSelectedNode(null);
+    },
+    [nodes, setNodes, setEdges],
   );
 
   const handleAddNode = useCallback(
@@ -688,13 +777,13 @@ export default function ArchestraStudio() {
       nodes.map((node) =>
         node.type === "plus"
           ? {
-              ...node,
-              data: {
-                ...node.data,
-                onOpenModal: (cat) =>
-                  setModalState({ isOpen: true, category: cat }),
-              },
-            }
+            ...node,
+            data: {
+              ...node.data,
+              onOpenModal: (cat) =>
+                setModalState({ isOpen: true, category: cat }),
+            },
+          }
           : node,
       ),
     [nodes],
@@ -795,11 +884,10 @@ export default function ArchestraStudio() {
             <div className="flex items-center h-8 gap-8  bg-[#151A25] border border-[#2A3241] rounded-lg">
               <button
                 onClick={() => setActiveScreen("orchestra")}
-                className={`flex items-center gap-2   rounded-md transition-all duration-200 ${
-                  activeScreen === "orchestra"
-                    ? " text-violet-400 shadow-sm"
-                    : "text-gray-500 hover:text-gray-300 hover:bg-[#2A3241]/50"
-                }`}
+                className={`flex items-center gap-2   rounded-md transition-all duration-200 ${activeScreen === "orchestra"
+                  ? " text-violet-400 shadow-sm"
+                  : "text-gray-500 hover:text-gray-300 hover:bg-[#2A3241]/50"
+                  }`}
               >
                 <Workflow size={14} />
                 <span className="text-[10px]  font-bold tracking-wide ml-8">
@@ -809,11 +897,10 @@ export default function ArchestraStudio() {
               <div className="w-px h-4 bg-[#2A3241]" />
               <button
                 onClick={() => setActiveScreen("ide")}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-md transition-all duration-200 ${
-                  activeScreen === "ide"
-                    ? "bg-[#2A3241] text-cyan-400 shadow-sm"
-                    : "text-gray-500 hover:text-gray-300 hover:bg-[#2A3241]/50"
-                }`}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-md transition-all duration-200 ${activeScreen === "ide"
+                  ? "bg-[#2A3241] text-cyan-400 shadow-sm"
+                  : "text-gray-500 hover:text-gray-300 hover:bg-[#2A3241]/50"
+                  }`}
               >
                 <Code2 size={14} />
                 <span className="text-[10px] font-bold tracking-wide">IDE</span>
@@ -830,55 +917,62 @@ export default function ArchestraStudio() {
         </div>
 
         {/* --- ORCHESTRA VIEW --- */}
-        {activeScreen === "orchestra" && (
-          <div className="flex-1 flex overflow-hidden">
-            <div className="flex-1 relative bg-[#0B0E14]">
-              <ReactFlow
-                nodes={nodesWithHandlers}
-                edges={edges}
-                onNodesChange={onNodesChange}
-                onEdgesChange={onEdgesChange}
-                onConnect={onConnect}
-                onNodeClick={(e, node) => setSelectedNode(node)}
-                onPaneClick={() => setSelectedNode(null)}
-                nodeTypes={nodeTypes}
-                fitView
-                fitViewOptions={{ padding: 0.2, includeHiddenNodes: true }}
-                minZoom={0.5}
-                defaultEdgeOptions={{
-                  type: "smoothstep",
-                  markerEnd: { type: MarkerType.ArrowClosed },
-                }}
-              >
-                <Background
-                  color="#2A3241"
-                  variant="dots"
-                  gap={24}
-                  size={1.5}
-                  className="opacity-40"
-                />
-                <Controls className="!bg-[#151A25] !border-[#2A3241] !fill-gray-400" />
-                <MiniMap
-                  nodeColor={(n) => COLUMNS[n.data.category]?.color || "#333"}
-                  className="!bg-[#151A25] !border-[#2A3241]"
-                />
-              </ReactFlow>
-            </div>
-
-            {/* Config Sidebar (Only visible in Orchestra Mode) */}
-            <div
-              className={`w-[320px] bg-[#0B0E14] border-l border-[#2A3241] z-30 transition-all duration-300 ${!selectedNode ? "hidden" : "block"}`}
+        <div
+          className="flex-1 flex overflow-hidden"
+          style={{ display: activeScreen === "orchestra" ? "flex" : "none" }}
+        >
+          <div className="flex-1 relative bg-[#0B0E14]">
+            <ReactFlow
+              nodes={nodesWithHandlers}
+              edges={edges}
+              onNodesChange={onNodesChange}
+              onEdgesChange={onEdgesChange}
+              onConnect={onConnect}
+              onNodeClick={(e, node) => setSelectedNode(node)}
+              onPaneClick={() => setSelectedNode(null)}
+              nodeTypes={nodeTypes}
+              fitView
+              fitViewOptions={{ padding: 0.2, includeHiddenNodes: true }}
+              minZoom={0.5}
+              defaultEdgeOptions={{
+                type: "smoothstep",
+                markerEnd: { type: MarkerType.ArrowClosed },
+              }}
             >
-              <ConfigSidebar
-                selectedNode={selectedNode}
-                updateNodeData={updateNodeData}
+              <Background
+                color="#2A3241"
+                variant="dots"
+                gap={24}
+                size={1.5}
+                className="opacity-40"
               />
-            </div>
+              <Controls className="!bg-[#151A25] !border-[#2A3241] !fill-gray-400" />
+              <MiniMap
+                nodeColor={(n) => COLUMNS[n.data.category]?.color || "#333"}
+                className="!bg-[#151A25] !border-[#2A3241]"
+              />
+            </ReactFlow>
           </div>
-        )}
+
+          {/* Config Sidebar (Only visible in Orchestra Mode) */}
+          <div
+            className={`w-[320px] bg-[#0B0E14] border-l border-[#2A3241] z-30 transition-all duration-300 ${!selectedNode ? "hidden" : "block"}`}
+          >
+            <ConfigSidebar
+              selectedNode={selectedNode}
+              updateNodeData={updateNodeData}
+              onDeleteNode={handleDeleteNode}
+            />
+          </div>
+        </div>
 
         {/* --- IDE VIEW --- */}
-        {activeScreen === "ide" && <IDEPage />}
+        <div
+          className="flex-1 flex overflow-hidden"
+          style={{ display: activeScreen === "ide" ? "flex" : "none" }}
+        >
+          <IDEPage />
+        </div>
       </div>
     </div>
   );

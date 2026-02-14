@@ -22,6 +22,7 @@ import {
   Sparkles,
   Bot,
   Circle,
+  RefreshCw,
 } from "lucide-react";
 import {
   FileTreeItem,
@@ -67,6 +68,36 @@ export default function IDEPage() {
   const activeFile = openFiles.find((f) => f.path === activeFileId) || null;
 
   // ── Handlers ──────────────────────────────────────────────────────────────
+  // Auto-connect to project if no handle is set
+  useEffect(() => {
+    const fetchProject = async () => {
+      try {
+        const port = 3001;
+        const host = window.location.hostname;
+        const res = await fetch(`http://${host}:${port}/api/fs/list`);
+        const data = await res.json();
+        if (data.success && data.files) {
+          // Filter to only show the 'studio' folder's contents (the actual nodes)
+          const studioFolder = data.files.find(f => f.name === 'studio');
+          const orchestraFiles = studioFolder ? studioFolder.children || [] : [];
+
+          // Deduplicate items to avoid key warnings
+          const uniqueItems = Array.from(new Map(orchestraFiles.map(i => [i.path, i])).values());
+
+          setFiles(uniqueItems);
+          console.log("Connected to Archestra Studio nodes.");
+
+          if (uniqueItems.length > 0 && !activeFileId) {
+            handleFileClick(uniqueItems[0]);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch project files:", err);
+      }
+    };
+    fetchProject();
+  }, [activeFileId]);
+
   const handleMagicAction = async (tool) => {
     if (tool.actionType === "create") {
       const fileName = prompt(
@@ -84,16 +115,29 @@ export default function IDEPage() {
     setBottomPanelOpen(true);
     setBottomPanelTab("console");
   };
-  const handleTestMCP = () => {
+  const handleTestMCP = async () => {
     if (!activeFile?.name.endsWith(".py")) {
       notify("Open a Python file to test", "warning");
       return;
     }
     setMcpStatus("Running");
+
+    // Notify backend
+    try {
+      await fetch('http://localhost:3001/api/mcp/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ serverId: activeFile.name })
+      });
+    } catch (e) {
+      console.error("Failed to notify backend about server run:", e);
+    }
+
     setLogs((p) => [
       ...p,
       { type: "info", text: `> python ${activeFile.name}` },
-      { type: "stdout", text: "MCP Server initialized at stdio…" },
+      { type: "stdout", text: `MCP Server '${activeFile.name}' initialized at stdio…` },
+      { type: "info", text: "Connecting to inspector..." }
     ]);
     setTestWorkbenchOpen(true);
   };
@@ -114,7 +158,7 @@ export default function IDEPage() {
       if (e) {
         try {
           envContent = await (await e.handle.getFile()).text();
-        } catch {}
+        } catch { }
       }
     } else {
       const s = openFiles.find((f) => f.name === ".env");
@@ -162,12 +206,12 @@ export default function IDEPage() {
         p.map((f) =>
           f.path === activeFileId
             ? {
-                ...f,
-                handle,
-                name: handle.name,
-                originalContent: f.content,
-                isUnsaved: false,
-              }
+              ...f,
+              handle,
+              name: handle.name,
+              originalContent: f.content,
+              isUnsaved: false,
+            }
             : f,
         ),
       );
@@ -314,13 +358,26 @@ export default function IDEPage() {
   };
 
   const handleFileClick = async (item) => {
+    if (item.kind === "directory") return;
     const existing = openFiles.find((f) => f.path === item.path);
     if (existing) {
       setActiveFileId(item.path);
       return;
     }
     try {
-      const content = await (await item.handle.getFile()).text();
+      let content = "";
+      if (item.handle) {
+        content = await (await item.handle.getFile()).text();
+      } else {
+        // Fallback to backend read
+        const port = 3001;
+        const host = window.location.hostname;
+        const res = await fetch(`http://${host}:${port}/api/fs/read?path=${encodeURIComponent(item.path)}`);
+        const data = await res.json();
+        if (data.success) content = data.content;
+        else throw new Error("API error");
+      }
+
       setOpenFiles((p) => [
         ...p,
         { ...item, content, originalContent: content, isUnsaved: false },
@@ -330,8 +387,9 @@ export default function IDEPage() {
         detectCapabilities(content);
         setTimeout(() => updateDecorations(content), 100);
       }
-    } catch {
+    } catch (e) {
       notify("Error reading file", "error");
+      console.error(e);
     }
   };
 
@@ -351,6 +409,8 @@ export default function IDEPage() {
 
   const handleEditorMount = (editor, monaco) => {
     editorRef.current = editor;
+
+    // Set theme
     monaco.editor.defineTheme("obsidian", {
       base: "vs-dark",
       inherit: true,
@@ -371,7 +431,11 @@ export default function IDEPage() {
       },
     });
     monaco.editor.setTheme("obsidian");
-    monaco.languages.registerCodeLensProvider("python", {
+
+    // Clear previous commands/providers if any (though mount is usually once)
+    if (window.mcpCodeLensProvider) window.mcpCodeLensProvider.dispose();
+
+    window.mcpCodeLensProvider = monaco.languages.registerCodeLensProvider("python", {
       provideCodeLenses: (model) => {
         const lenses = [];
         const content = model.getValue();
@@ -386,23 +450,27 @@ export default function IDEPage() {
               endLineNumber: pos.lineNumber,
               endColumn: pos.column + m[0].length,
             },
-            id: "explain-mcp",
+            id: `explain-mcp-${m.index}`,
             command: {
               id: "cmd-explain-mcp",
               title: "✦ Explain with AI",
-              arguments: [m[1]],
+              arguments: [m[1], m[0]],
             },
           });
         }
-        return { lenses, dispose: () => {} };
+        return { lenses, dispose: () => { } };
       },
     });
-    try {
-      monaco.editor.registerCommand("cmd-explain-mcp", (_, type) => {
+
+    // Use a global flag to prevent double registration of the same command
+    if (!window.mcpCommandRegistered) {
+      monaco.editor.registerCommand("cmd-explain-mcp", (_, type, snippet) => {
         setAiModalType(type);
         setAiModalOpen(true);
       });
-    } catch {}
+      window.mcpCommandRegistered = true;
+    }
+
     if (activeFile) updateDecorations(activeFile.content);
   };
 
@@ -460,12 +528,12 @@ export default function IDEPage() {
     const parseArgs = (s) =>
       s
         ? s
-            .split(",")
-            .map((a) => {
-              const [n, t] = a.split(":").map((x) => x.trim());
-              return { name: n, type: t || "any" };
-            })
-            .filter((a) => a.name && a.name !== "self")
+          .split(",")
+          .map((a) => {
+            const [n, t] = a.split(":").map((x) => x.trim());
+            return { name: n, type: t || "any" };
+          })
+          .filter((a) => a.name && a.name !== "self")
         : [];
     [
       ["tool", /@mcp\.tool\(.*?\)\s+(?:async\s+)?def\s+(\w+)\s*\((.*?)\)/gs],
@@ -697,21 +765,6 @@ export default function IDEPage() {
           )}
         </div>
 
-        {/* Open folder */}
-        <div style={{ padding: 9, borderBottom: "1px solid var(--b0)" }}>
-          <ABtn
-            className="btn-secondary"
-            onClick={handleOpenFolder}
-            style={{
-              width: "100%",
-              justifyContent: "center",
-              fontSize: 11.5,
-              padding: "7px 0",
-            }}
-          >
-            <FolderOpen size={13} /> Open Folder
-          </ABtn>
-        </div>
 
         <div className="scroll" style={{ flex: 1, overflowY: "auto" }}>
           {/* Quick Actions */}
@@ -817,6 +870,32 @@ export default function IDEPage() {
                   style={{ width: 18, height: 18 }}
                   onClick={(e) => {
                     e.stopPropagation();
+                    const fetchProject = async () => {
+                      try {
+                        const port = 3001;
+                        const host = window.location.hostname;
+                        const res = await fetch(`http://${host}:${port}/api/fs/list`);
+                        const data = await res.json();
+                        if (data.success) {
+                          const studioFolder = data.files.find(f => f.name === 'studio');
+                          setFiles(studioFolder ? studioFolder.children || [] : []);
+                        }
+                        notify("Project nodes refreshed", "success");
+                      } catch (err) {
+                        notify("Refresh failed", "error");
+                      }
+                    };
+                    fetchProject();
+                  }}
+                  title="Refresh Explorer"
+                >
+                  <RefreshCw size={10} />
+                </button>
+                <button
+                  className="ibtn focusable"
+                  style={{ width: 18, height: 18 }}
+                  onClick={(e) => {
+                    e.stopPropagation();
                     handleNewFileButton();
                   }}
                   title="New file"
@@ -832,7 +911,7 @@ export default function IDEPage() {
             </div>
             {sections.explorer && (
               <div style={{ paddingTop: 2, paddingBottom: 4 }}>
-                {files.length === 0 && !projectHandle && (
+                {files.length === 0 && (
                   <div
                     style={{
                       padding: "14px 12px",
@@ -842,7 +921,7 @@ export default function IDEPage() {
                       animation: "fadeUp 200ms ease",
                     }}
                   >
-                    Open a folder to start
+                    No files found in project root
                   </div>
                 )}
                 {files.map((f) => (
@@ -1521,7 +1600,7 @@ export default function IDEPage() {
                       Tools
                     </div>
                     {detectedCaps.filter((c) => c.type === "tool").length ===
-                    0 ? (
+                      0 ? (
                       <div
                         style={{
                           padding: "6px",
