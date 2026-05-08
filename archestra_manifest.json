@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-02-14T14:31:24.527Z",
+  "lastUpdated": "2026-02-15T17:46:26.998Z",
   "topology": {
     "nodes": [
       {
@@ -64,53 +64,7 @@
         }
       },
       {
-        "id": "client-1771079437924",
-        "type": "card",
-        "parentId": "lane-client",
-        "extent": "parent",
-        "position": {
-          "x": 20,
-          "y": 100
-        },
-        "dragHandle": ".drag-handle",
-        "data": {
-          "category": "client",
-          "label": "CLI Tool",
-          "customName": "CLI Tool",
-          "sublabel": "Terminal",
-          "icon": "terminal",
-          "toolId": "t-cli"
-        },
-        "measured": {
-          "width": 400,
-          "height": 90
-        },
-        "selected": true
-      },
-      {
-        "id": "add-client",
-        "type": "plus",
-        "parentId": "lane-client",
-        "extent": "parent",
-        "position": {
-          "x": 20,
-          "y": 200
-        },
-        "style": {
-          "width": 380,
-          "height": 54
-        },
-        "data": {
-          "category": "client"
-        },
-        "measured": {
-          "width": 380,
-          "height": 54
-        },
-        "selected": false
-      },
-      {
-        "id": "mcp-1771079450955",
+        "id": "mcp-1771177567416",
         "type": "card",
         "parentId": "lane-mcp",
         "extent": "parent",
@@ -121,11 +75,11 @@
         "dragHandle": ".drag-handle",
         "data": {
           "category": "mcp",
-          "label": "Stripe API",
-          "customName": "Stripe API",
-          "sublabel": "Payments",
-          "icon": "stripe",
-          "toolId": "t-stripe"
+          "label": "Postgres DB",
+          "customName": "Postgres DB",
+          "sublabel": "Read/Write SQL",
+          "icon": "db",
+          "toolId": "t-pg"
         },
         "measured": {
           "width": 400,
@@ -155,7 +109,7 @@
         "selected": false
       },
       {
-        "id": "provider-1771079452537",
+        "id": "provider-1771177569504",
         "type": "card",
         "parentId": "lane-provider",
         "extent": "parent",
@@ -166,35 +120,11 @@
         "dragHandle": ".drag-handle",
         "data": {
           "category": "provider",
-          "label": "API Gateway",
-          "customName": "API Gateway",
-          "sublabel": "Ingress",
-          "icon": "net",
-          "toolId": "t-gateway"
-        },
-        "measured": {
-          "width": 400,
-          "height": 90
-        },
-        "selected": false
-      },
-      {
-        "id": "provider-1771079456548",
-        "type": "card",
-        "parentId": "lane-provider",
-        "extent": "parent",
-        "position": {
-          "x": 20,
-          "y": 200
-        },
-        "dragHandle": ".drag-handle",
-        "data": {
-          "category": "provider",
-          "label": "API Gateway",
-          "customName": "API Gateway 2",
-          "sublabel": "Ingress",
-          "icon": "net",
-          "toolId": "t-gateway"
+          "label": "PII Redaction",
+          "customName": "PII Redaction",
+          "sublabel": "Privacy Filter",
+          "icon": "shield",
+          "toolId": "t-guard"
         },
         "measured": {
           "width": 400,
@@ -208,7 +138,7 @@
         "extent": "parent",
         "position": {
           "x": 20,
-          "y": 300
+          "y": 200
         },
         "style": {
           "width": 380,
@@ -216,6 +146,52 @@
         },
         "data": {
           "category": "provider"
+        },
+        "measured": {
+          "width": 380,
+          "height": 54
+        },
+        "selected": false
+      },
+      {
+        "id": "client-1771177574448",
+        "type": "card",
+        "parentId": "lane-client",
+        "extent": "parent",
+        "position": {
+          "x": 20,
+          "y": 100
+        },
+        "dragHandle": ".drag-handle",
+        "data": {
+          "category": "client",
+          "label": "Next.js App",
+          "customName": "Next.js App 2",
+          "sublabel": "Web Dashboard",
+          "icon": "web",
+          "toolId": "t-next"
+        },
+        "measured": {
+          "width": 400,
+          "height": 90
+        },
+        "selected": true
+      },
+      {
+        "id": "add-client",
+        "type": "plus",
+        "parentId": "lane-client",
+        "extent": "parent",
+        "position": {
+          "x": 20,
+          "y": 200
+        },
+        "style": {
+          "width": 380,
+          "height": 54
+        },
+        "data": {
+          "category": "client"
         },
         "measured": {
           "width": 380,
@@ -235,10 +211,10 @@
           "stroke": "#fff",
           "strokeWidth": 1.5
         },
-        "source": "mcp-1771079450955",
-        "target": "provider-1771079452537",
+        "source": "mcp-1771177567416",
+        "target": "provider-1771177569504",
         "animated": true,
-        "id": "xy-edge__mcp-1771079450955-provider-1771079452537"
+        "id": "xy-edge__mcp-1771177567416-provider-1771177569504"
       },
       {
         "type": "smoothstep",
@@ -250,10 +226,10 @@
           "stroke": "#fff",
           "strokeWidth": 1.5
         },
-        "source": "provider-1771079452537",
-        "target": "client-1771079437924",
+        "source": "provider-1771177569504",
+        "target": "client-1771177574448",
         "animated": true,
-        "id": "xy-edge__provider-1771079452537-client-1771079437924"
+        "id": "xy-edge__provider-1771177569504-client-1771177574448"
       }
     ]
   }
